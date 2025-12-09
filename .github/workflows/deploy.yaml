@@ -41,7 +41,7 @@ jobs:
     - name: Deploy ssh
       run: |
         echo "${{ secrets.CHAVE_SITE_PROD }}" > chave_site.pem
-        ssh -i chave_site.pem ec2-user@${{ secrets.SSH_PARA_IP }} << EOF
+        ssh -i chave_site.pem ec2-user@${{secrets.PUBLIC_IP}} << EOF
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
           docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/site_prod:v1.0
           docker run -d -p 80:80 --name site-prod ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/site_prod:v1.0
