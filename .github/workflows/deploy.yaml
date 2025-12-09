@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   job1:
-    name: build and deploy
+    name: build 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -34,4 +34,17 @@ jobs:
           docker build -t site-praticas-devops:v1.0 .
           docker tag site-praticas-devops:v1.0 ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/site_prod:v1.0
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/site_prod:v1.0
-
+  job2:
+    name: deploy 
+    runs-on: ubuntu-latest
+    steps: 
+    - name: Deploy ssh
+    run: |
+      echo "${{ secrets.CHAVE_SITE_PROD }}" > chave_site.pem
+      ssh -i chave_site.pem ec2-user@${{ secrets.SSH_PARA_IP }} << EOF
+        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+        docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/site_prod:v1.0
+        docker run -d -p 80:80 --name site-prod ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/site_prod:v1.0
+        docker ps
+      EOF
+      rm chave_site.pem 
