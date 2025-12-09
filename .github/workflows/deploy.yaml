@@ -39,15 +39,31 @@ jobs:
     needs: job1
     runs-on: ubuntu-latest
     steps: 
+    - name: Authorize GitHub Runner IP
+      run: |
+        IP=$(curl -s https://checkip.amazonaws.com)
+        echo "Runner IP is $IP"
+        aws ec2 authorize-security-group-ingress --group-id ${{ secrets.AWS_SG_ID }} --protocol tcp --port 22 --cidr $IP/32
+        echo "AWS_SG_ID=${{ secrets.AWS_SG_ID }}" >> $GITHUB_ENV
+        echo "RUNNER_IP=$IP" >> $GITHUB_ENV
+
     - name: Deploy ssh
       run: |
         echo "${{ secrets.CHAVE_SITE_PROD }}" > chave_site.pem 
         chmod 400 chave_site.pem  
-        ssh -i chave_site.pem -o StrictHostKeyChecking=no ec2-user@${{secrets.PUBLIC_IP}} << EOF
+        ssh -i chave_site.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.PUBLIC_IP }} << 'EOF'
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
           docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/site_prod:v1.0
           docker run -d -p 80:80 --name site-prod ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/site_prod:v1.0
-          docker ps
-          rm chave_site.pem 
-        EOF
-        
+        EOF     
+        rm chave_site.pem 
+
+    - name: Revoke GitHub Runner IP (Always run)
+      if: always() # roda mesmo se o deploy falhar
+      run: |
+        aws ec2 revoke-security-group-ingress --group-id ${{ env.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ env.RUNNER_IP }}/32
+
+
+
+
+
