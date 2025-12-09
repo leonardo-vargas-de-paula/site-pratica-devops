@@ -39,6 +39,11 @@ jobs:
     needs: job1
     runs-on: ubuntu-latest
     steps: 
+    - name: configure aws credentials
+      uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN_PUSH }}
+        aws-region: us-east-1
     - name: Authorize GitHub Runner IP
       run: |
         IP=$(curl -s https://checkip.amazonaws.com)
