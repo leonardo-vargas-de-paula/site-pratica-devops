@@ -59,6 +59,10 @@ jobs:
         ssh -i chave_site.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.PUBLIC_IP }} << 'EOF'
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
           docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/site_prod:v1.0
+          
+          docker stop site-prod || true
+          docker rm site-prod || true
+          
           docker run -d -p 80:80 --name site-prod ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/site_prod:v1.0
         EOF
         rm chave_site.pem 
